@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HardwareID.h">
+    <ClInclude Include="HardwareInformation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

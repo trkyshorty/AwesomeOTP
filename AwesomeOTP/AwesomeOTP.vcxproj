@@ -132,7 +132,7 @@
     <ClCompile Include="AwesomeOTP.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HardwareID.h" />
+    <ClInclude Include="HardwareInformation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

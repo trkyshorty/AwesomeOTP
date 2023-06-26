@@ -12,7 +12,7 @@
 
 #pragma comment(lib, "wbemuuid.lib")
 
-class HardwareID
+class HardwareInformation
 {
 public:
 	struct VolumeObject
@@ -97,14 +97,14 @@ public:
 		std::wstring ComputerHardwareId{};
 	} Registry;
 
-	std::unique_ptr<HardwareID> Pointer()
+	std::unique_ptr<HardwareInformation> Pointer()
 	{
-		return std::make_unique<HardwareID>(*this);
+		return std::make_unique<HardwareInformation>(*this);
 	}
 
-	HardwareID()
+	HardwareInformation()
 	{
-		GetHardwareID();
+		//GetHardwareInformation();
 	}
 
 	static std::wstring SafeString(const wchar_t* pString)
@@ -499,6 +499,11 @@ private:
 						this->Disk.at(i).Size += (Volume.Size = (long long)(TotalBytes.QuadPart / pow(1024, 3)));
 						this->Disk.at(i).FreeSpace += (Volume.FreeSpace = (long long)(FreeBytesAvailable.QuadPart / pow(1024, 3)));
 
+						if (BootDirectory.at(0)[0] == Volume.DriveLetter[0])
+						{
+							this->Disk.at(i).IsBootDrive = true;
+						}
+
 						hVolume = CreateFileW(std::wstring(VolumePath + Volume.DriveLetter).c_str(),
 							GENERIC_READ,
 							FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -781,7 +786,8 @@ private:
 		}
 	}
 
-	void GetHardwareID()
+public:
+	void LoadHardwareInformation()
 	{
 		//QuerySMBIOS();
 		//QueryProcessor();
