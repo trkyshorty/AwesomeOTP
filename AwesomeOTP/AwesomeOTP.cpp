@@ -30,9 +30,9 @@ std::wstring GetHardwareID()
         {
             std::wstringstream sstream;
             sstream << std::hex << Disk.Signature;
-            std::wstring hexStr = sstream.str();
+            std::wstring szSignature = sstream.str();
 
-            szOTPHardwareID = hexStr.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16);
+            szOTPHardwareID = szSignature.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16);
         }
     }
 
@@ -93,9 +93,9 @@ int main()
                     {
                         std::wstringstream sstream;
                         sstream << std::hex << Disk.Signature;
-                        std::wstring hexStr = sstream.str();
+                        std::wstring szSignature = sstream.str();
 
-                        std::wcout << "OTP Hardware ID: " << hexStr.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16) << std::endl;
+                        std::wcout << "OTP Hardware ID: " << szSignature.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16) << std::endl;
                     }
 
                     std::cout << "----------------------------" << std::endl;

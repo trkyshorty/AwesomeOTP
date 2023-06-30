@@ -9,6 +9,7 @@
 #include <Wbemidl.h>
 #include <ntddscsi.h>
 #include <winioctl.h>
+#include <VersionHelpers.h>
 
 #pragma comment(lib, "wbemuuid.lib")
 
@@ -342,10 +343,15 @@ private:
 			QueryWMI(L"Win32_DiskDrive", L"Signature", Signature);
 			QueryWMI(L"Win32_LogicalDisk", L"DeviceId", DeviceId);
 			QueryWMI(L"Win32_BootConfiguration", L"BootDirectory", BootDirectory);
-			QueryWMI(L"MSFT_Disk", L"BusType", BusType, L"ROOT\\microsoft\\windows\\storage");
-			QueryWMI(L"MSFT_Disk", L"Number", DiskNumbers, L"ROOT\\microsoft\\windows\\storage");
-			QueryWMI(L"MSFT_PhysicalDisk", L"MediaType", MediaType, L"ROOT\\microsoft\\windows\\storage");
-			QueryWMI(L"MSFT_PhysicalDisk", L"FriendlyName", FriendlyName, L"ROOT\\microsoft\\windows\\storage");
+
+			if (IsWindows8OrGreater())
+			{
+				QueryWMI(L"MSFT_Disk", L"BusType", BusType, L"ROOT\\microsoft\\windows\\storage");
+				QueryWMI(L"MSFT_Disk", L"Number", DiskNumbers, L"ROOT\\microsoft\\windows\\storage");
+				QueryWMI(L"MSFT_PhysicalDisk", L"MediaType", MediaType, L"ROOT\\microsoft\\windows\\storage");
+				QueryWMI(L"MSFT_PhysicalDisk", L"FriendlyName", FriendlyName, L"ROOT\\microsoft\\windows\\storage");
+
+			}
 
 			DriveCount = DeviceId.size();
 			this->Disk.resize(DriveCount);
@@ -410,9 +416,12 @@ private:
 						SortedDeviceId.at(i) = const_cast<wchar_t*>(DeviceId.at(j));
 						VolumeData[Model.at(i)].push_back(DeviceId.at(j));
 
-						if (std::find(SortedDiskNumbers.begin(), SortedDiskNumbers.end(), DiskExtents.Extents->DiskNumber) == SortedDiskNumbers.end())
+						if (IsWindows8OrGreater())
 						{
-							SortedDiskNumbers.push_back(DiskExtents.Extents->DiskNumber);
+							if (std::find(SortedDiskNumbers.begin(), SortedDiskNumbers.end(), DiskExtents.Extents->DiskNumber) == SortedDiskNumbers.end())
+							{
+								SortedDiskNumbers.push_back(DiskExtents.Extents->DiskNumber);
+							}
 						}
 
 						DeviceId.at(j) = L"X";
@@ -425,43 +434,57 @@ private:
 				}
 			}
 
-			// The BusType data returned by MSFT_Disk will also not be in the proper order, so we must map that accordingly as well
-			// To do so, we simply compare the disk numbers returned from MSFT_Disk to the disk numbers we sorted according to the Win32_DiskDrive data
 
-			for (size_t i = 0; i < DiskNumbers.size(); i++)
+			if (IsWindows8OrGreater())
 			{
-				for (size_t j = 0; j < DiskNumbers.size(); j++)
+				// The BusType data returned by MSFT_Disk will also not be in the proper order, so we must map that accordingly as well
+				// To do so, we simply compare the disk numbers returned from MSFT_Disk to the disk numbers we sorted according to the Win32_DiskDrive data
+
+				for (size_t i = 0; i < DiskNumbers.size(); i++)
 				{
-					if (DiskNumbers[j] == SortedDiskNumbers[i])
+					for (size_t j = 0; j < DiskNumbers.size(); j++)
 					{
-						SortedBusType.push_back(BusType.at(j));
-						break;
+						if (DiskNumbers[j] == SortedDiskNumbers[i])
+						{
+							SortedBusType.push_back(BusType.at(j));
+							break;
+						}
 					}
 				}
 			}
 
+
 			for (size_t i = 0; i < DriveCount && i < SerialNumber.size(); i++)
 			{
-
 				RemoveWhitespaces(this->Disk.at(i).SerialNumber = SafeString(SerialNumber.at(i)));
 				this->Disk.at(i).Model = SafeString(Model.at(i));
 				this->Disk.at(i).Interface = SafeString(Interface.at(i));
-				this->Disk.at(i).BusType = SortedBusType.at(i);
+
+				if (IsWindows8OrGreater())
+				{
+					this->Disk.at(i).BusType = SortedBusType.at(i);
+				}			
+
 				this->Disk.at(i).Name = SafeString(Name.at(i));
 				this->Disk.at(i).PNPDeviceID = SafeString(PNPDeviceID.at(i));
 				this->Disk.at(i).Signature = Signature.at(i);
 
-				// Data from MSFT_PhysicalDisk will again not be in the same order as Win32_DiskDrive
-				// So we compare the "FriendlyName" from MSFT_PhysicalDisk with the "Model" from Win32_DiskDrive
-				// We then reorder the data accordingly
 
-				for (size_t j = 0; j < FriendlyName.size(); j++)
+				if (IsWindows8OrGreater())
 				{
-					if (!this->Disk.at(i).Model.compare(FriendlyName.at(j)))
+					// Data from MSFT_PhysicalDisk will again not be in the same order as Win32_DiskDrive
+					// So we compare the "FriendlyName" from MSFT_PhysicalDisk with the "Model" from Win32_DiskDrive
+					// We then reorder the data accordingly
+
+					for (size_t j = 0; j < FriendlyName.size(); j++)
 					{
-						this->Disk.at(i).MediaType = MediaType.at(j);
+						if (!this->Disk.at(i).Model.compare(FriendlyName.at(j)))
+						{
+							this->Disk.at(i).MediaType = MediaType.at(j);
+						}
 					}
 				}
+
 
 				if (VolumeData[Model.at(i)].size() == 1)
 				{
@@ -478,7 +501,11 @@ private:
 					this->Disk.at(i).Size = (long long)(TotalBytes.QuadPart / pow(1024, 3));
 					this->Disk.at(i).FreeSpace = (long long)(FreeBytesAvailable.QuadPart / pow(1024, 3));
 					this->Disk.at(i).IsBootDrive = BootDirectory.at(0)[0] == this->Disk.at(i).DriveLetter[0] ? true : false;
-					this->Disk.at(i).BusType = (MediaType.at(i) == 0 && SortedBusType.at(i) == 7) ? 123 : SortedBusType.at(i);
+
+					if (IsWindows8OrGreater())
+					{
+						this->Disk.at(i).BusType = (MediaType.at(i) == 0 && SortedBusType.at(i) == 7) ? 123 : SortedBusType.at(i);
+					}
 				}
 				else
 				{
