@@ -29,7 +29,7 @@ std::wstring GetHardwareID()
         else
         {
             std::wstringstream sstream;
-            sstream << std::hex << Disk.Signature;
+            sstream << std::hex << std::uppercase << Disk.Signature;
             std::wstring szSignature = sstream.str();
 
             szOTPHardwareID = szSignature.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16);
@@ -92,7 +92,7 @@ int main()
                     else
                     {
                         std::wstringstream sstream;
-                        sstream << std::hex << Disk.Signature;
+                        sstream << std::hex << std::uppercase << Disk.Signature;
                         std::wstring szSignature = sstream.str();
 
                         std::wcout << "OTP Hardware ID: " << szSignature.substr(0, 4) + szPNPDeviceID.substr(szPNPDeviceID.length() - 16) << std::endl;
