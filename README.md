@@ -1,3 +1,3 @@
 ## Discord
 
-[If you need help](https://discord.gg/5pBp2s2NUr)
+[If you need help](https://discord.gg/GaAYYzKs5k)
